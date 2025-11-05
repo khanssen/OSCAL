@@ -1,0 +1,45 @@
+﻿name: OSCAL Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, develop, add-171a-plan ]
+    paths:
+      - "**/*.json"
+      - "**/*.xml"
+      - "**/*.yaml"
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - "**/*.json"
+      - "**/*.xml"
+      - "**/*.yaml"
+
+jobs:
+  validate-oscal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (no submodules)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: "false"
+          lfs: "false"
+          persist-credentials: "false"
+
+      - name: Set up Java (required by oscal-cli)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: oscal-cli version
+        uses: oscal-club/oscal-cli-action@v2.0.1
+        with:
+          args: --version
+
+      - name: Validate one component-definition (edit the path)
+        uses: oscal-club/oscal-cli-action@v2.0.1
+        with:
+          args: >
+            component-definition validate ./path/to/your-component.json
