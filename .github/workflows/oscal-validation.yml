@@ -1,4 +1,4 @@
-﻿name: OSCAL Validation
+name: OSCAL Validation
 
 on:
   push:
@@ -25,7 +25,29 @@ jobs:
       with:
         args: --version
     
-    - name: Validate Catalogs
+    # XML Validation Steps
+    - name: Validate Catalogs (XML)
+      run: |
+        for file in $(find . -name "*catalog*.xml" 2>/dev/null); do
+          if [ -f "$file" ]; then
+            echo "Validating: $file"
+            oscal-cli catalog validate "$file"
+          fi
+        done
+      continue-on-error: false
+    
+    - name: Validate Profiles (XML)
+      run: |
+        for file in $(find . -name "*profile*.xml" 2>/dev/null); do
+          if [ -f "$file" ]; then
+            echo "Validating: $file"
+            oscal-cli profile validate "$file"
+          fi
+        done
+      continue-on-error: false
+    
+    # JSON Validation Steps
+    - name: Validate Catalogs (JSON)
       run: |
         for file in $(find . -name "*catalog*.json" 2>/dev/null); do
           if [ -f "$file" ]; then
@@ -33,9 +55,9 @@ jobs:
             oscal-cli catalog validate "$file"
           fi
         done
-      continue-on-error: true
+      continue-on-error: false
     
-    - name: Validate Profiles
+    - name: Validate Profiles (JSON)
       run: |
         for file in $(find . -name "*profile*.json" 2>/dev/null); do
           if [ -f "$file" ]; then
@@ -43,52 +65,66 @@ jobs:
             oscal-cli profile validate "$file"
           fi
         done
-      continue-on-error: true
+      continue-on-error: false
     
     - name: Validate Assessment Plans
       shell: bash
       run: |
         set -euo pipefail
         shopt -s nullglob
-        files=( $(git ls-files '*assessment-plan*.json') )
+        files=( $(git ls-files '*assessment-plan*.json' '*assessment-plan*.xml') )
         if ((${#files[@]} == 0)); then
-          echo "No assessment-plan JSON files found. Skipping."
+          echo "No assessment-plan files found. Skipping."
           exit 0
         fi
         for file in "${files[@]}"; do
           echo "Validating: $file"
           oscal-cli validate "$file"
         done
-      continue-on-error: true
+      continue-on-error: false
     
     - name: Validate Assessment Results
       shell: bash
       run: |
         set -euo pipefail
         shopt -s nullglob
-        files=( $(git ls-files '*assessment-results*.json') )
+        files=( $(git ls-files '*assessment-results*.json' '*assessment-results*.xml') )
         if ((${#files[@]} == 0)); then
-          echo "No assessment-results JSON files found. Skipping."
+          echo "No assessment-results files found. Skipping."
           exit 0
         fi
         for file in "${files[@]}"; do
           echo "Validating: $file"
           oscal-cli validate "$file"
         done
-      continue-on-error: true
+      continue-on-error: false
     
     - name: Validate POAMs
       shell: bash
       run: |
         set -euo pipefail
         shopt -s nullglob
-        files=( $(git ls-files '*poam*.json') )
+        files=( $(git ls-files '*poam*.json' '*poam*.xml') )
         if ((${#files[@]} == 0)); then
-          echo "No POAM JSON files found. Skipping."
+          echo "No POAM files found. Skipping."
           exit 0
         fi
         for file in "${files[@]}"; do
           echo "Validating: $file"
           oscal-cli validate "$file"
         done
-      continue-on-error: true
+      continue-on-error: false
+    
+    # Optional: Conversion validation - ensure XML and JSON are equivalent
+    - name: Validate XML to JSON Conversion (Catalogs)
+      run: |
+        for xml_file in $(find . -name "*catalog*.xml" 2>/dev/null); do
+          if [ -f "$xml_file" ]; then
+            json_file="${xml_file%.xml}.json"
+            echo "Converting: $xml_file → $json_file"
+            oscal-cli catalog convert --to=json "$xml_file" "/tmp/$(basename $json_file)"
+            echo "Validating converted JSON: /tmp/$(basename $json_file)"
+            oscal-cli catalog validate "/tmp/$(basename $json_file)"
+          fi
+        done
+      continue-on-error: false
