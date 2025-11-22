@@ -1988,8 +1988,7 @@
 **TEST:** [SELECT FROM: Mechanisms supporting or implementing cryptographic protection].</prose>
       </part>
     </control>
-	      </control>
-    <control id="c-3.13.12">
+	<control id="c-3.13.12">
       <title>Prohibit remote activation of collaborative computing devices and provide indication of 
 devices in use to users present at the device.  </title>
       <part name="statement">
